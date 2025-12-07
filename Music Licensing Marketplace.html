@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decentralized Music Licensing Marketplace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #00FF00;
+            --primary-dark: #00CC00;
+            --secondary: #00FFFF;
+            --accent: #FF00FF;
+            --danger: #FF0055;
+            --bg-dark: #0a0a0a;
+            --bg-light: #1a1a1a;
+            --grid-dark: #0f0f0f;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --neon-green: #39ff14;
+            --neon-cyan: #00f0ff;
+            --neon-pink: #ff006e;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a0033 50%, var(--grid-dark) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(0deg, transparent 24%, rgba(0, 255, 0, 0.05) 25%, rgba(0, 255, 0, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 255, 0, 0.05) 75%, rgba(0, 255, 0, 0.05) 76%, transparent 77%, transparent),
+                linear-gradient(90deg, transparent 24%, rgba(0, 255, 0, 0.05) 25%, rgba(0, 255, 0, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 255, 0, 0.05) 75%, rgba(0, 255, 0, 0.05) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+            animation: gridScroll 20s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.1;
+        }
+
+        @keyframes gridScroll {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(50px); }
+        }
+
+        /* Glitch scanlines */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(255, 0, 100, 0.03),
+                rgba(255, 0, 100, 0.03) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            animation: flicker 0.15s infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.9; }
+            50% { opacity: 1; }
+            100% { opacity: 0.9; }
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Header */
+        .header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 40px;
+            margin-bottom: 60px;
+            padding: 30px 20px;
+            border: 2px solid var(--primary);
+            background: rgba(0, 255, 0, 0.02);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.2), transparent);
+            animation: headerGlitch 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes headerGlitch {
+            0%, 100% { left: -100%; }
+            50% { left: 100%; }
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: var(--primary);
+            text-shadow: 0 0 10px var(--primary), 0 0 20px rgba(0, 255, 0, 0.5);
+            position: relative;
+            z-index: 3;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            position: relative;
+            z-index: 3;
+        }
+
+        .hud-display {
+            display: flex;
+            gap: 20px;
+            padding: 15px 20px;
+            border: 1px solid var(--secondary);
+            background: rgba(0, 255, 255, 0.05);
+            box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.1), 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.8rem;
+        }
+
+        .hud-label {
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.7rem;
+        }
+
+        .hud-value {
+            color: var(--primary);
+            font-weight: 900;
+            font-size: 1.1rem;
+            text-shadow: 0 0 5px var(--primary);
+        }
+
+        /* Main Grid */
+        .marketplace-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .marketplace-grid.wide {
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        }
+
+        /* Track Card */
+        .track-card {
+            background: linear-gradient(135deg, rgba(0, 255, 0, 0.05), rgba(0, 255, 255, 0.02));
+            border: 2px solid rgba(0, 255, 0, 0.3);
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .track-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.4), transparent);
+            transition: left 0.5s ease;
+            pointer-events: none;
+        }
+
+        .track-card:hover::before {
+            left: 100%;
+        }
+
+        .track-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.4), inset 0 0 15px rgba(0, 255, 0, 0.05);
+            transform: translateY(-5px);
+        }
+
+        .track-card.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 25px rgba(255, 0, 255, 0.5), inset 0 0 15px rgba(255, 0, 255, 0.1);
+            background: linear-gradient(135deg, rgba(255, 0, 255, 0.1), rgba(0, 255, 255, 0.05));
+        }
+
+        /* Track Header */
+        .track-header {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 15px;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+        }
+
+        .waveform {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 30px;
+        }
+
+        .wave-bar {
+            width: 4px;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            border-radius: 2px;
+            animation: wave 0.6s ease-in-out infinite;
+            box-shadow: 0 0 5px currentColor;
+        }
+
+        @keyframes wave {
+            0%, 100% { height: 30%; }
+            50% { height: 100%; }
+        }
+
+        .wave-bar:nth-child(1) { animation-delay: 0s; }
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+
+        .track-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .track-title {
+            font-size: 1.1rem;
+            font-weight: 900;
+            color: var(--primary);
+            letter-spacing: 1px;
+        }
+
+        .track-artist {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .license-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            background: rgba(0, 255, 255, 0.15);
+            border: 1px solid var(--secondary);
+            color: var(--secondary);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        /* Metadata */
+        .track-metadata {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 2px solid var(--secondary);
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .meta-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .meta-value {
+            font-size: 0.95rem;
+            color: var(--primary);
+            font-weight: 600;
+            text-shadow: 0 0 3px var(--primary);
+        }
+
+        /* Bidding Section */
+        .bidding-section {
+            background: rgba(255, 0, 100, 0.05);
+            border: 1px dashed var(--danger);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 3px;
+        }
+
+        .bid-display {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .bid-info h4 {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .current-bid {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--accent);
+            text-shadow: 0 0 8px var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bid-counter {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--secondary);
+        }
+
+        .bid-counter::before {
+            content: '⟳';
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .bid-button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            border: 2px solid var(--primary);
+            color: var(--bg-dark);
+            font-weight: 900;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bid-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.6), inset 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+
+        .bid-button:active {
+            transform: translateY(0);
+        }
+
+        /* Rights & Restrictions */
+        .rights-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .right-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(0, 255, 0, 0.05);
+            border: 1px solid rgba(0, 255, 0, 0.2);
+            font-size: 0.85rem;
+            border-radius: 3px;
+        }
+
+        .right-icon {
+            font-size: 1.2rem;
+        }
+
+        .right-icon.denied {
+            opacity: 0.3;
+        }
+
+        /* Creator Info */
+        .creator-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: rgba(0, 255, 255, 0.08);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 3px;
+            margin-top: 15px;
+        }
+
+        .creator-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: 2px solid var(--secondary);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .creator-info h4 {
+            font-size: 0.9rem;
+            color: var(--primary);
+            letter-spacing: 0.5px;
+        }
+
+        .creator-info p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .creator-badge {
+            margin-left: auto;
+            padding: 5px 10px;
+            background: rgba(0, 255, 0, 0.2);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-radius: 3px;
+        }
+
+        /* Live Bids Panel */
+        .live-bids {
+            background: linear-gradient(135deg, rgba(255, 0, 100, 0.1), rgba(255, 0, 255, 0.05));
+            border: 2px solid var(--danger);
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .live-bids::before {
+            content: 'LIVE BIDDING';
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 0.7rem;
+            color: var(--danger);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 900;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 49%, 100% { opacity: 1; }
+            50%, 99% { opacity: 0.3; }
+        }
+
+        .live-bid-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 0, 100, 0.2);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .live-bid-item:last-child {
+            border-bottom: none;
+        }
+
+        .bid-timestamp {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-align: center;
+            min-width: 60px;
+        }
+
+        .bid-username {
+            font-size: 0.9rem;
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .bid-amount {
+            font-size: 1.1rem;
+            color: var(--accent);
+            font-weight: 900;
+            text-shadow: 0 0 5px var(--accent);
+        }
+
+        /* Filter Panel */
+        .filter-panel {
+            background: rgba(0, 255, 0, 0.05);
+            border: 2px solid var(--primary);
+            padding: 20px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 8px 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-select:hover,
+        .filter-select:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            outline: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .hud-display {
+                flex-wrap: wrap;
+            }
+
+            .marketplace-grid,
+            .marketplace-grid.wide {
+                grid-template-columns: 1fr;
+            }
+
+            .track-header {
+                grid-template-columns: 1fr;
+            }
+
+            .bid-display {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1>⬢ MUSIC LICENSE HUB</h1>
+            </div>
+            <div class="header-controls">
+                <div class="hud-display">
+                    <div class="hud-item">
+                        <span class="hud-label">Active Bids</span>
+                        <span class="hud-value">247</span>
+                    </div>
+                    <div class="hud-item">
+                        <span class="hud-label">Total Volume</span>
+                        <span class="hud-value">$2.4M</span>
+                    </div>
+                    <div class="hud-item">
+                        <span class="hud-label">Network</span>
+                        <span class="hud-value">LIVE</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-panel">
+            <div class="filter-group">
+                <label class="filter-label">Genre</label>
+                <select class="filter-select">
+                    <option>All Genres</option>
+                    <option>Electronic</option>
+                    <option>Hip Hop</option>
+                    <option>Indie</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">License Type</label>
+                <select class="filter-select">
+                    <option>All Licenses</option>
+                    <option>Exclusive</option>
+                    <option>Non-Exclusive</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Price Range</label>
+                <select class="filter-select">
+                    <option>Any Price</option>
+                    <option>$0 - $500</option>
+                    <option>$500 - $2000</option>
+                    <option>$2000+</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Duration</label>
+                <select class="filter-select">
+                    <option>Any Length</option>
+                    <option>Under 3:00</option>
+                    <option>3:00 - 5:00</option>
+                    <option>5:00+</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Track Listings -->
+        <div class="marketplace-grid">
+            <!-- Track 1 -->
+            <div class="track-card">
+                <div class="track-header">
+                    <div class="waveform">
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                    </div>
+                    <div class="track-info">
+                        <div class="track-title">Neon Dreams</div>
+                        <div class="track-artist">Synth Wave Collective</div>
+                    </div>
+                    <span class="license-badge">Exclusive</span>
+                </div>
+
+                <div class="track-metadata">
+                    <div class="meta-item">
+                        <span class="meta-label">BPM</span>
+                        <span class="meta-value">128</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Duration</span>
+                        <span class="meta-value">3:45</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Key</span>
+                        <span class="meta-value">A Minor</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Genre</span>
+                        <span class="meta-value">Synthwave</span>
+                    </div>
+                </div>
+
+                <div class="bidding-section">
+                    <div class="bid-display">
+                        <div class="bid-info">
+                            <h4>Current Bid</h4>
+                            <div class="current-bid">
+                                $1,250
+                                <div class="bid-counter">5 bids</div>
+                            </div>
+                        </div>
+                        <button class="bid-button">Place Bid</button>
+                    </div>
+                </div>
+
+                <div class="rights-grid">
+                    <div class="right-item">
+                        <span class="right-icon">✓</span>
+                        <span>Commercial</span>
+                    </div>
+                    <div class="right-item">
+                        <span class="right-icon">✓</span>
+                        <span>Streaming</span>
+                    </div>
+                    <div class="right-item">
+                        <span class="right-icon">✓</span>
+                        <span>Sync Rights</span>
+                    </div>
+                    <div class="right-item">
+                        <span class="right-icon denied">✗</span>
+                        <span>Sublicense</span>
+                    </div>
+                </div>
+
+                <div class="creator-section">
+                    <div class="creator-avatar">SWC</div>
+                    <div class="creator-info">
+                        <h4>Synth Wave Collective</h4>
+                        <p>45 Tracks | 2.3K Followers</p>
+                    </div>
+                    <span class="creator-badge">Verified</span>
+                </div>
+            </div>
+
+            <!-- Track 2 -->
+            <div class="track-card active">
+                <div class="track-header">
+                    <div class="waveform">
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                    </div>
+                    <div class="track-info">
+                        <div class="track-title">Digital Horizon</div>
+                        <div class="track-artist">Luna Echo Studio</div>
+                    </div>
+                    <span class="license-badge">Non-Exclusive</span>
+                </div>
+
+                <div class="track-metadata">
+                    <div class="meta-item">
+                        <span class="meta-label">BPM</span>
+                        <span class="meta-value">96</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Duration</span>
+                        <span class="meta-value">4:12</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Key</span>
+                        <span class="meta-value">D Major</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Genre</span>
+                        <span class="meta-value">Ambient</span>
+                    </div>
+                </div>
+
+                <div class="bidding-section">
+                    <div class="bid-display">
+                        <div class="bid-info">
+                            <h4>Current Bid</h4>
+                            <div class="current-bid">
+                                $850
+                                <div class="bid-counter">3 bids</div>
+                            </div>
+                        </div>
+                        <button class="bid-button">Place Bid</button>
+                    </div>
+                </div>
+
+                <div class="rights-grid">
+                    <div class="right-item">
+                        <span class="right-icon">✓</span>
+                        <span>Commercial</span>
+                    </div>
+                    <div class="right-item">
+                        <span class="right-icon">✓</span>
+                        <span>Streaming</span>
+                    </div>
+                    <div class="right-item">
+                        <span class="right-icon denied">✗</span>
+                        <span>Sync Rights</span>
+                    </div>
+                    <div class="right-item">
+                        <span class="right-icon">✓</span>
+                        <span>Sublicense</span>
+                    </div>
+                </div>
+
+                <div class="creator-section">
+                    <div class="creator-avatar">LE</div>
+                    <div class="creator-info">
+                        <h4>Luna Echo Studio</h4>
+                        <p>78 Tracks | 5.1K Followers</p>
+                    </div>
+                    <span class="creator-badge">Verified</span>
+                </div>
+            </div>
+
+            <!-- Track 3 -->
+            <div class="track-card">
+                <div class="track-header">
+                    <div class="waveform">
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                    </div>
+                    <div class="track-info">
+                        <div class="track-title">Urban Pulse</div>
+                        <div class="track-artist">Beat Masters Inc</div>
+                    </div>
+                    <span class="license-badge">Exclusive</span>
+                </div>
+
+                <div class="track-metadata">
+                    <div class="meta-item">
+                        <span class="meta-label">BPM</span>
+                        <span class="meta-value">140</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Duration</span>
+                        <span class="meta-value">3:20</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Key</span>
+                        <span class="meta-value">G Minor</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Genre</span>
+                        <span class="meta-value">Hip Hop</span>
+                    </div>
+                </div>
+
+                <div class="bidding-section">
+                    <div class="bid-display">
+                        <div class="bid-info">
+                            <h4>Current Bid</h4>
+                            <div class="current-bid">
+                                $2,100
+                                <div class="bid-counter">8 bids</div>
+                            </div>
+                        </div>
+                        <button class="bid-button">Place Bid</button>
+                    </div>
+                </div>
+
+                <div class="rights-grid">
+                    <div class="right-item">
+                        <span class="right-icon">✓</span>
+                        <span>Commercial</span>
+                    </div>
+                    <div class="right-item">
+                        <span class="right-icon">✓</span>
+                        <span>Streaming</span>
+                    </div>
+                    <div class="right-item">
+                        <span class="right-icon">✓</span>
+                        <span>Sync Rights</span>
+                    </div>
+                    <div class="right-item">
+                        <span class="right-icon">✓</span>
+                        <span>Sublicense</span>
+                    </div>
+                </div>
+
+                <div class="creator-section">
+                    <div class="creator-avatar">BM</div>
+                    <div class="creator-info">
+                        <h4>Beat Masters Inc</h4>
+                        <p>156 Tracks | 12.4K Followers</p>
+                    </div>
+                    <span class="creator-badge">Verified</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Bidding Panel -->
+        <div class="live-bids wide">
+            <h2 style="color: var(--danger); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; font-size: 1.3rem;">Active Bids in Real-Time</h2>
+            <div class="live-bid-item">
+                <span class="bid-timestamp">Now</span>
+                <span class="bid-username">CryptoBeat_23</span>
+                <span class="bid-amount">$2,150 → Neon Dreams</span>
+            </div>
+            <div class="live-bid-item">
+                <span class="bid-timestamp">2s ago</span>
+                <span class="bid-username">SoundForge_Dev</span>
+                <span class="bid-amount">$1,900 → Urban Pulse</span>
+            </div>
+            <div class="live-bid-item">
+                <span class="bid-timestamp">5s ago</span>
+                <span class="bid-username">MediaSync_Pro</span>
+                <span class="bid-amount">$875 → Digital Horizon</span>
+            </div>
+            <div class="live-bid-item">
+                <span class="bid-timestamp">8s ago</span>
+                <span class="bid-username">ViralContent_Labs</span>
+                <span class="bid-amount">$2,050 → Neon Dreams</span>
+            </div>
+            <div class="live-bid-item">
+                <span class="bid-timestamp">12s ago</span>
+                <span class="bid-username">NetflixPromo_AI</span>
+                <span class="bid-amount">$1,800 → Urban Pulse</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize interactions
+        window.addEventListener('load', () => {
+            setupCardInteractions();
+            setupBidButton();
+            simulateLiveBids();
+            initializeAnimations();
+        });
+
+        function setupCardInteractions() {
+            const cards = document.querySelectorAll('.track-card');
+            cards.forEach(card => {
+                card.addEventListener('click', function() {
+                    cards.forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Add glitch effect
+                    this.style.animation = 'none';
+                    setTimeout(() => {
+                        this.style.animation = '';
+                    }, 10);
+                });
+
+                card.addEventListener('mouseenter', function() {
+                    const waveforms = this.querySelectorAll('.wave-bar');
+                    waveforms.forEach((bar, i) => {
+                        bar.style.animationPlayState = 'running';
+                    });
+                });
+            });
+        }
+
+        function setupBidButton() {
+            const bidButtons = document.querySelectorAll('.bid-button');
+            bidButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    const card = btn.closest('.track-card');
+                    const currentBid = card.querySelector('.current-bid');
+                    const amount = parseInt(currentBid.textContent.replace(/[^0-9]/g, ''));
+                    const newAmount = amount + 100;
+                    
+                    currentBid.innerHTML = `$${newAmount}<div class="bid-counter">${parseInt(currentBid.querySelector('.bid-counter').textContent) + 1} bids</div>`;
+                    
+                    btn.textContent = 'BID PLACED!';
+                    btn.style.background = 'linear-gradient(135deg, #00FF00, #00FFFF)';
+                    btn.style.color = '#0a0a0a';
+                    
+                    setTimeout(() => {
+                        btn.textContent = 'Place Bid';
+                        btn.style.background = '';
+                        btn.style.color = '';
+                    }, 2000);
+
+                    // Add glitch effect
+                    card.style.filter = 'hue-rotate(20deg)';
+                    setTimeout(() => {
+                        card.style.filter = '';
+                    }, 100);
+                });
+            });
+        }
+
+        function simulateLiveBids() {
+            const liveBidsContainer = document.querySelector('.live-bids');
+            const bids = [
+                { user: 'PixelStorm_AI', amount: '$2,300', track: 'Neon Dreams' },
+                { user: 'CreativeFlow_Studio', amount: '$950', track: 'Digital Horizon' },
+                { user: 'ProducerX_Net', amount: '$2,250', track: 'Urban Pulse' },
+                { user: 'MusicChain_Pro', amount: '$1,100', track: 'Neon Dreams' }
+            ];
+
+            setInterval(() => {
+                const randomBid = bids[Math.floor(Math.random() * bids.length)];
+                const newBidItem = document.createElement('div');
+                newBidItem.className = 'live-bid-item';
+                newBidItem.innerHTML = `
+                    <span class="bid-timestamp">Now</span>
+                    <span class="bid-username">${randomBid.user}</span>
+                    <span class="bid-amount">${randomBid.amount} → ${randomBid.track}</span>
+                `;
+                
+                liveBidsContainer.insertBefore(newBidItem, liveBidsContainer.children[2]);
+                
+                // Remove oldest bid
+                const items = liveBidsContainer.querySelectorAll('.live-bid-item');
+                if (items.length > 6) {
+                    items[items.length - 1].remove();
+                }
+            }, 3000);
+        }
+
+        function initializeAnimations() {
+            // Stagger card entrance
+            const cards = document.querySelectorAll('.track-card');
+            cards.forEach((card, i) => {
+                card.style.opacity = '0';
+                card.style.animation = `slideIn 0.6s ease forwards`;
+                card.style.animationDelay = `${i * 0.1}s`;
+            });
+        }
+
+        // Add slideIn animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

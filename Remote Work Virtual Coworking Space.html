@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Work Virtual Coworking Space</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #00D9FF;
+            --primary-dark: #00B8D4;
+            --secondary: #FF006E;
+            --accent: #8338EC;
+            --success: #00FF6B;
+            --warning: #FFB900;
+            --bg-dark: #0a0e27;
+            --bg-light: #131829;
+            --glass-light: rgba(255, 255, 255, 0.1);
+            --glass-dark: rgba(0, 0, 0, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8c1;
+            --border: rgba(0, 217, 255, 0.2);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 50%, var(--bg-light) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0, 217, 255, 0.12) 0%, transparent 70%);
+            animation: floatGlow 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -40%;
+            left: -40%;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(circle, rgba(131, 56, 236, 0.1) 0%, transparent 70%);
+            animation: floatGlow 25s ease-in-out infinite reverse;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes floatGlow {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(40px, 40px); }
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 50px;
+        }
+
+        .status-card {
+            background: var(--glass-light);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .status-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+        }
+
+        .status-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .status-value {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        }
+
+        /* Main Workspace Grid */
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 1200px) {
+            .workspace-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Virtual Workspace Card */
+        .workspace-card {
+            background: var(--glass-light);
+            backdrop-filter: blur(30px);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+            min-height: 400px;
+        }
+
+        .workspace-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.1), transparent);
+            transition: left 0.6s ease;
+            pointer-events: none;
+        }
+
+        .workspace-card:hover::before {
+            left: 100%;
+        }
+
+        .workspace-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 30px;
+            letter-spacing: -0.5px;
+        }
+
+        /* Avatar Grid */
+        .avatar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 20px;
+        }
+
+        .avatar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: slideUp 0.6s ease forwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .avatar-container:nth-child(1) { animation-delay: 0.1s; }
+        .avatar-container:nth-child(2) { animation-delay: 0.15s; }
+        .avatar-container:nth-child(3) { animation-delay: 0.2s; }
+        .avatar-container:nth-child(4) { animation-delay: 0.25s; }
+        .avatar-container:nth-child(5) { animation-delay: 0.3s; }
+        .avatar-container:nth-child(6) { animation-delay: 0.35s; }
+        .avatar-container:nth-child(7) { animation-delay: 0.4s; }
+        .avatar-container:nth-child(8) { animation-delay: 0.45s; }
+
+        .avatar-container:hover {
+            transform: scale(1.1);
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+            border: 3px solid var(--primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .avatar::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            top: 6px;
+            right: 6px;
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 10px var(--success), 0 0 20px var(--success); }
+            50% { box-shadow: 0 0 20px var(--success), 0 0 30px var(--success); }
+        }
+
+        .avatar-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+            color: var(--text-primary);
+            max-width: 90px;
+            word-wrap: break-word;
+        }
+
+        .avatar-status {
+            font-size: 0.7rem;
+            color: var(--success);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar-card {
+            background: var(--glass-light);
+            backdrop-filter: blur(30px);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .sidebar-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .sidebar-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            letter-spacing: -0.5px;
+        }
+
+        /* Quick Stats */
+        .quick-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        .quick-stat:last-child {
+            border-bottom: none;
+        }
+
+        .stat-icon {
+            font-size: 1.2rem;
+        }
+
+        .stat-amount {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Activity Feed */
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            border-left: 3px solid var(--primary);
+            font-size: 0.85rem;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .activity-icon {
+            min-width: 24px;
+            height: 24px;
+            background: rgba(0, 217, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .activity-text {
+            flex: 1;
+        }
+
+        .activity-user {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .activity-action {
+            color: var(--text-secondary);
+        }
+
+        /* Collaboration Grid */
+        .collab-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .collab-card {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.08), rgba(131, 56, 236, 0.08));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .collab-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 10px 40px rgba(0, 217, 255, 0.15);
+            transform: translateY(-8px);
+        }
+
+        .collab-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .collab-icon {
+            font-size: 1.8rem;
+        }
+
+        .collab-title {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .collab-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .collab-members {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .member-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: rgba(0, 217, 255, 0.15);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 12px;
+            font-size: 0.7rem;
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(0, 217, 255, 0.3);
+        }
+
+        .btn.secondary {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn.secondary:hover {
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .workspace-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .avatar-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .workspace-card {
+                padding: 20px;
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🚀 Virtual Coworking Space</h1>
+            <p>Immersive collaboration environment for remote teams working together in real-time</p>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-card">
+                <div class="status-label">Active Users</div>
+                <div class="status-value">24</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">Active Projects</div>
+                <div class="status-value">8</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">Online Teams</div>
+                <div class="status-value">12</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">Room Status</div>
+                <div class="status-value">Full</div>
+            </div>
+        </div>
+
+        <!-- Main Workspace -->
+        <div class="workspace-grid">
+            <!-- Virtual Workspace -->
+            <div class="workspace-card">
+                <h2 class="workspace-title">🏢 Main Workspace</h2>
+                <div class="avatar-grid">
+                    <div class="avatar-container">
+                        <div class="avatar">👨‍💼</div>
+                        <div class="avatar-name">Alex Chen</div>
+                        <div class="avatar-status">In Focus</div>
+                    </div>
+                    <div class="avatar-container">
+                        <div class="avatar">👩‍💻</div>
+                        <div class="avatar-name">Sam Rivera</div>
+                        <div class="avatar-status">Available</div>
+                    </div>
+                    <div class="avatar-container">
+                        <div class="avatar">👨‍🎨</div>
+                        <div class="avatar-name">Jordan Park</div>
+                        <div class="avatar-status">In Meeting</div>
+                    </div>
+                    <div class="avatar-container">
+                        <div class="avatar">👩‍🔬</div>
+                        <div class="avatar-name">Maya Sharma</div>
+                        <div class="avatar-status">Available</div>
+                    </div>
+                    <div class="avatar-container">
+                        <div class="avatar">👨‍🚀</div>
+                        <div class="avatar-name">Marcus Lee</div>
+                        <div class="avatar-status">In Focus</div>
+                    </div>
+                    <div class="avatar-container">
+                        <div class="avatar">👩‍⚕️</div>
+                        <div class="avatar-name">Sofia Garcia</div>
+                        <div class="avatar-status">Available</div>
+                    </div>
+                    <div class="avatar-container">
+                        <div class="avatar">👨‍🌾</div>
+                        <div class="avatar-name">James Wright</div>
+                        <div class="avatar-status">Away</div>
+                    </div>
+                    <div class="avatar-container">
+                        <div class="avatar">👩‍🎓</div>
+                        <div class="avatar-name">Elena Torres</div>
+                        <div class="avatar-status">Available</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Quick Stats Card -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">📊 Today's Stats</h3>
+                    <div class="quick-stat">
+                        <div>
+                            <span class="stat-icon">⏱️</span>
+                            <span> Avg. Focus Time</span>
+                        </div>
+                        <span class="stat-amount">4h 32m</span>
+                    </div>
+                    <div class="quick-stat">
+                        <div>
+                            <span class="stat-icon">💬</span>
+                            <span> Team Messages</span>
+                        </div>
+                        <span class="stat-amount">147</span>
+                    </div>
+                    <div class="quick-stat">
+                        <div>
+                            <span class="stat-icon">📹</span>
+                            <span> Calls Made</span>
+                        </div>
+                        <span class="stat-amount">6</span>
+                    </div>
+                    <div class="quick-stat">
+                        <div>
+                            <span class="stat-icon">🎯</span>
+                            <span> Tasks Done</span>
+                        </div>
+                        <span class="stat-amount">23</span>
+                    </div>
+                </div>
+
+                <!-- Activity Feed Card -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">📢 Recent Activity</h3>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-icon">✓</div>
+                            <div class="activity-text">
+                                <span class="activity-user">Sam Rivera</span>
+                                <span class="activity-action"> completed design review</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon">💬</div>
+                            <div class="activity-text">
+                                <span class="activity-user">Maya Sharma</span>
+                                <span class="activity-action"> replied in project chat</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon">📝</div>
+                            <div class="activity-text">
+                                <span class="activity-user">Alex Chen</span>
+                                <span class="activity-action"> shared a document</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon">👥</div>
+                            <div class="activity-text">
+                                <span class="activity-user">Jordan Park</span>
+                                <span class="activity-action"> started team standup</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collaboration Spaces -->
+        <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 30px; letter-spacing: -0.5px;">🤝 Active Collaboration Spaces</h2>
+        <div class="collab-grid">
+            <div class="collab-card">
+                <div class="collab-header">
+                    <div class="collab-icon">🎨</div>
+                    <div class="collab-title">Design Sprint</div>
+                </div>
+                <div class="collab-desc">UI/UX redesign for mobile app. Brainstorming new interaction patterns.</div>
+                <div class="collab-members">
+                    <span class="member-badge">Sam Rivera</span>
+                    <span class="member-badge">Jordan Park</span>
+                    <span class="member-badge">+1 more</span>
+                </div>
+            </div>
+
+            <div class="collab-card">
+                <div class="collab-header">
+                    <div class="collab-icon">💻</div>
+                    <div class="collab-title">Backend Sync</div>
+                </div>
+                <div class="collab-desc">Database optimization and API improvements. Code review session ongoing.</div>
+                <div class="collab-members">
+                    <span class="member-badge">Alex Chen</span>
+                    <span class="member-badge">Marcus Lee</span>
+                    <span class="member-badge">+2 more</span>
+                </div>
+            </div>
+
+            <div class="collab-card">
+                <div class="collab-header">
+                    <div class="collab-icon">📊</div>
+                    <div class="collab-title">Analytics Review</div>
+                </div>
+                <div class="collab-desc">Quarterly performance analysis and Q4 strategy planning with stakeholders.</div>
+                <div class="collab-members">
+                    <span class="member-badge">Maya Sharma</span>
+                    <span class="member-badge">Sofia Garcia</span>
+                    <span class="member-badge">+3 more</span>
+                </div>
+            </div>
+
+            <div class="collab-card">
+                <div class="collab-header">
+                    <div class="collab-icon">📚</div>
+                    <div class="collab-title">Knowledge Share</div>
+                </div>
+                <div class="collab-desc">Weekly learning session on new tech stack and best practices sharing.</div>
+                <div class="collab-members">
+                    <span class="member-badge">Elena Torres</span>
+                    <span class="member-badge">All Teams</span>
+                </div>
+            </div>
+
+            <div class="collab-card">
+                <div class="collab-header">
+                    <div class="collab-icon">🚀</div>
+                    <div class="collab-title">Product Launch</div>
+                </div>
+                <div class="collab-desc">Coordinate final release details. Marketing campaign kickoff preparation.</div>
+                <div class="collab-members">
+                    <span class="member-badge">James Wright</span>
+                    <span class="member-badge">Cross-team</span>
+                    <span class="member-badge">+5 more</span>
+                </div>
+            </div>
+
+            <div class="collab-card">
+                <div class="collab-header">
+                    <div class="collab-icon">🎯</div>
+                    <div class="collab-title">Sprint Planning</div>
+                </div>
+                <div class="collab-desc">Next sprint backlog refinement. Estimate user stories and priorities.</div>
+                <div class="collab-members">
+                    <span class="member-badge">Team Leads</span>
+                    <span class="member-badge">+8 members</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="text-align: center; margin-top: 50px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn">Start Video Call</button>
+            <button class="btn">Create Space</button>
+            <button class="btn secondary">View Schedule</button>
+            <button class="btn secondary">Team Directory</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize on load
+        window.addEventListener('load', () => {
+            setupInteractions();
+            simulateRealTimeUpdates();
+        });
+
+        function setupInteractions() {
+            // Avatar hover effects with neon glow
+            const avatars = document.querySelectorAll('.avatar');
+            avatars.forEach(avatar => {
+                avatar.addEventListener('mouseenter', function() {
+                    this.style.boxShadow = '0 0 30px rgba(0, 217, 255, 0.8), 0 0 60px rgba(131, 56, 236, 0.4)';
+                    this.style.transform = 'scale(1.15)';
+                });
+                avatar.addEventListener('mouseleave', function() {
+                    this.style.boxShadow = '0 0 20px rgba(0, 217, 255, 0.3)';
+                    this.style.transform = 'scale(1)';
+                });
+            });
+
+            // Collaboration card interactions
+            const collabCards = document.querySelectorAll('.collab-card');
+            collabCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    this.style.borderColor = 'var(--primary)';
+                    this.style.background = 'linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(131, 56, 236, 0.12))';
+                    setTimeout(() => {
+                        this.style.borderColor = '';
+                        this.style.background = '';
+                    }, 500);
+                });
+            });
+
+            // Button interactions
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 150);
+                });
+            });
+
+            // Activity list auto-add new items
+            const activityList = document.querySelector('.activity-list');
+            const activities = [
+                { user: 'Sam Rivera', action: 'completed design review', icon: '✓' },
+                { user: 'Maya Sharma', action: 'replied in project chat', icon: '💬' },
+                { user: 'Alex Chen', action: 'shared a document', icon: '📝' },
+                { user: 'Jordan Park', action: 'started team standup', icon: '👥' },
+                { user: 'Marcus Lee', action: 'commented on code', icon: '💻' },
+                { user: 'Sofia Garcia', action: 'joined workspace', icon: '👋' }
+            ];
+
+            setInterval(() => {
+                const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+                const newItem = document.createElement('div');
+                newItem.className = 'activity-item';
+                newItem.innerHTML = `
+                    <div class="activity-icon">${randomActivity.icon}</div>
+                    <div class="activity-text">
+                        <span class="activity-user">${randomActivity.user}</span>
+                        <span class="activity-action"> ${randomActivity.action}</span>
+                    </div>
+                `;
+                activityList.insertBefore(newItem, activityList.firstChild);
+                
+                // Remove oldest item if more than 4
+                const items = activityList.querySelectorAll('.activity-item');
+                if (items.length > 4) {
+                    items[items.length - 1].remove();
+                }
+            }, 6000);
+        }
+
+        function simulateRealTimeUpdates() {
+            // Update user statuses
+            const statuses = ['In Focus', 'Available', 'In Meeting', 'Away'];
+            const statusElements = document.querySelectorAll('.avatar-status');
+            
+            setInterval(() => {
+                statusElements.forEach((el, index) => {
+                    if (Math.random() > 0.7) {
+                        el.textContent = statuses[Math.floor(Math.random() * statuses.length)];
+                        el.style.color = el.textContent === 'Away' ? '#FFB900' : 'var(--success)';
+                    }
+                });
+            }, 8000);
+
+            // Pulse avatar borders
+            const avatars = document.querySelectorAll('.avatar');
+            setInterval(() => {
+                avatars.forEach(avatar => {
+                    avatar.style.borderColor = `hsl(${Math.random() * 60 + 180}, 100%, 60%)`;
+                });
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

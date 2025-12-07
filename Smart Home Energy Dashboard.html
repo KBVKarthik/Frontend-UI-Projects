@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Home Energy Management Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #00D9FF;
+            --primary-dark: #00B8D4;
+            --secondary: #FF006E;
+            --accent: #8338EC;
+            --success: #00FF6B;
+            --warning: #FFB900;
+            --danger: #FF4444;
+            --bg-dark: #0a0e27;
+            --bg-light: #131829;
+            --glass-light: rgba(255, 255, 255, 0.1);
+            --glass-dark: rgba(0, 0, 0, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8c1;
+            --border: rgba(0, 217, 255, 0.2);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 50%, var(--bg-light) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated HUD background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0, 217, 255, 0.1) 0%, transparent 70%);
+            animation: hudGlow 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -40%;
+            left: -40%;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(circle, rgba(131, 56, 236, 0.08) 0%, transparent 70%);
+            animation: hudGlow 25s ease-in-out infinite reverse;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes hudGlow {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, 30px); }
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Header Section */
+        .header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 40px;
+            margin-bottom: 50px;
+            padding: 30px;
+            background: var(--glass-light);
+            backdrop-filter: blur(30px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 25px;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .stat-display {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 25px;
+            background: var(--glass-light);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-display:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .stat-icon {
+            font-size: 1.8rem;
+        }
+
+        .stat-content {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        }
+
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-grid.wide {
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--glass-light);
+            backdrop-filter: blur(30px);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.15), transparent);
+            transition: left 0.5s ease;
+            pointer-events: none;
+        }
+
+        .card:hover::before {
+            left: 100%;
+        }
+
+        .card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 15px 50px rgba(0, 217, 255, 0.2);
+            transform: translateY(-8px);
+            background: rgba(0, 217, 255, 0.08);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-header h2 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .card-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            background: rgba(0, 255, 107, 0.2);
+            color: var(--success);
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(0, 255, 107, 0.4);
+        }
+
+        .card-badge.warning {
+            background: rgba(255, 185, 0, 0.2);
+            color: var(--warning);
+            border-color: rgba(255, 185, 0, 0.4);
+        }
+
+        .card-badge.danger {
+            background: rgba(255, 68, 68, 0.2);
+            color: var(--danger);
+            border-color: rgba(255, 68, 68, 0.4);
+        }
+
+        /* Power Consumption Ring */
+        .power-ring {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 25px;
+        }
+
+        .ring-svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .ring-circle {
+            fill: none;
+            stroke-width: 10;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.6s ease;
+        }
+
+        .ring-bg {
+            stroke: rgba(0, 217, 255, 0.1);
+        }
+
+        .ring-progress {
+            stroke: url(#ringGradient);
+            stroke-dasharray: 565;
+            stroke-dashoffset: 565;
+            animation: fillRing 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fillRing {
+            to {
+                stroke-dashoffset: 141;
+            }
+        }
+
+        .ring-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .ring-value {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        }
+
+        .ring-unit {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 5px;
+        }
+
+        /* Data visualization bars */
+        .chart-bars {
+            height: 100px;
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(180deg, var(--primary), var(--accent));
+            border-radius: 4px;
+            min-height: 4px;
+            animation: growBar 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+        }
+
+        .chart-bar:hover {
+            filter: brightness(1.2);
+            transform: scaleY(1.1);
+        }
+
+        @keyframes growBar {
+            from {
+                height: 0;
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .chart-bar:nth-child(1) { animation-delay: 0.1s; }
+        .chart-bar:nth-child(2) { animation-delay: 0.15s; }
+        .chart-bar:nth-child(3) { animation-delay: 0.2s; }
+        .chart-bar:nth-child(4) { animation-delay: 0.25s; }
+        .chart-bar:nth-child(5) { animation-delay: 0.3s; }
+        .chart-bar:nth-child(6) { animation-delay: 0.35s; }
+        .chart-bar:nth-child(7) { animation-delay: 0.4s; }
+
+        /* Device List */
+        .device-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+        }
+
+        .device-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 217, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .device-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+            background: rgba(0, 217, 255, 0.05);
+        }
+
+        .device-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .device-icon {
+            font-size: 1.8rem;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+        }
+
+        .device-info {
+            flex: 1;
+        }
+
+        .device-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .device-status {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .device-toggle {
+            width: 45px;
+            height: 24px;
+            background: rgba(0, 255, 107, 0.2);
+            border: 1px solid var(--success);
+            border-radius: 12px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .device-toggle.off {
+            background: rgba(255, 68, 68, 0.2);
+            border-color: var(--danger);
+        }
+
+        .device-toggle::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--success);
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 107, 0.5);
+        }
+
+        .device-toggle.off::after {
+            left: 23px;
+            background: var(--danger);
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+        }
+
+        .device-consumption {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            margin-top: 12px;
+            font-size: 0.85rem;
+        }
+
+        .consumption-value {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(131, 56, 236, 0.1));
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+
+        .control-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: 25px;
+            letter-spacing: -0.5px;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .control-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 217, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.5);
+            border: 2px solid var(--primary);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.5);
+            border: 2px solid var(--primary);
+        }
+
+        .slider-value {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-shadow: 0 0 5px rgba(0, 217, 255, 0.5);
+        }
+
+        /* Recommendations */
+        .recommendations {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.08), rgba(131, 56, 236, 0.08));
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+
+        .recommendations h3 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+
+        .recommendation-item {
+            display: flex;
+            gap: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border);
+            align-items: flex-start;
+        }
+
+        .recommendation-item:last-child {
+            border-bottom: none;
+        }
+
+        .rec-icon {
+            font-size: 1.5rem;
+            min-width: 40px;
+        }
+
+        .rec-content h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .rec-content p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(0, 217, 255, 0.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .header-stats {
+                align-items: flex-start;
+            }
+
+            .dashboard-grid,
+            .dashboard-grid.wide {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .device-list {
+                grid-template-columns: 1fr;
+            }
+
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scroll Animation */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: revealScroll 0.6s ease forwards;
+        }
+
+        @keyframes revealScroll {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1>⚡ Energy Command Center</h1>
+            </div>
+            <div class="header-stats">
+                <div class="stat-display">
+                    <span class="stat-icon">📊</span>
+                    <div class="stat-content">
+                        <span class="stat-label">Current Draw</span>
+                        <span class="stat-value">2.4 kW</span>
+                    </div>
+                </div>
+                <div class="stat-display">
+                    <span class="stat-icon">📈</span>
+                    <div class="stat-content">
+                        <span class="stat-label">Today's Usage</span>
+                        <span class="stat-value">18.7 kWh</span>
+                    </div>
+                </div>
+                <div class="stat-display">
+                    <span class="stat-icon">💰</span>
+                    <div class="stat-content">
+                        <span class="stat-label">Estimated Cost</span>
+                        <span class="stat-value">$4.22</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Power Consumption Ring -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Real-Time Consumption</h2>
+                    <span class="card-badge">Live</span>
+                </div>
+
+                <div class="power-ring">
+                    <svg class="ring-svg" viewBox="0 0 120 120">
+                        <defs>
+                            <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#00D9FF;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#8338EC;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle class="ring-circle ring-bg" cx="60" cy="60" r="50"></circle>
+                        <circle class="ring-circle ring-progress" cx="60" cy="60" r="50"></circle>
+                    </svg>
+                    <div class="ring-text">
+                        <div class="ring-value">72%</div>
+                        <div class="ring-unit">Capacity</div>
+                    </div>
+                </div>
+
+                <div class="chart-bars">
+                    <div class="chart-bar" style="height: 45%;"></div>
+                    <div class="chart-bar" style="height: 60%;"></div>
+                    <div class="chart-bar" style="height: 70%;"></div>
+                    <div class="chart-bar" style="height: 85%;"></div>
+                    <div class="chart-bar" style="height: 75%;"></div>
+                    <div class="chart-bar" style="height: 55%;"></div>
+                    <div class="chart-bar" style="height: 40%;"></div>
+                </div>
+            </div>
+
+            <!-- Peak Hours Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Peak Hours Forecast</h2>
+                    <span class="card-badge warning">Alert</span>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 25px;">
+                    <div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Morning Peak (7-9 AM)</div>
+                        <div class="chart-bars" style="height: 60px; margin: 0;">
+                            <div class="chart-bar" style="height: 40%; animation-delay: 0.1s;"></div>
+                            <div class="chart-bar" style="height: 65%; animation-delay: 0.15s;"></div>
+                            <div class="chart-bar" style="height: 80%; animation-delay: 0.2s;"></div>
+                            <div class="chart-bar" style="height: 75%; animation-delay: 0.25s;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Evening Peak (5-8 PM)</div>
+                        <div class="chart-bars" style="height: 60px; margin: 0;">
+                            <div class="chart-bar" style="height: 70%; animation-delay: 0.1s;"></div>
+                            <div class="chart-bar" style="height: 85%; animation-delay: 0.15s;"></div>
+                            <div class="chart-bar" style="height: 90%; animation-delay: 0.2s;"></div>
+                            <div class="chart-bar" style="height: 80%; animation-delay: 0.25s;"></div>
+                        </div>
+                    </div>
+                </div>
+            </card>
+
+            <!-- System Status Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>System Health</h2>
+                    <span class="card-badge">Optimal</span>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0, 0, 0, 0.2); border-radius: 10px;">
+                        <span style="font-size: 0.9rem;">Smart Meter</span>
+                        <span style="color: var(--success); font-weight: 700;">Connected</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0, 0, 0, 0.2); border-radius: 10px;">
+                        <span style="font-size: 0.9rem;">Solar Panel</span>
+                        <span style="color: var(--success); font-weight: 700;">Generating</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0, 0, 0, 0.2); border-radius: 10px;">
+                        <span style="font-size: 0.9rem;">Battery Backup</span>
+                        <span style="color: var(--success); font-weight: 700;">85% Charged</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0, 0, 0, 0.2); border-radius: 10px;">
+                        <span style="font-size: 0.9rem;">WiFi Connection</span>
+                        <span style="color: var(--success); font-weight: 700;">Stable</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connected Devices -->
+        <div class="card" style="margin-bottom: 30px;">
+            <div class="card-header">
+                <h2>Connected Devices</h2>
+                <span class="card-badge">12 Devices</span>
+            </div>
+
+            <div class="device-list">
+                <div class="device-item">
+                    <div class="device-header">
+                        <div class="device-icon">❄️</div>
+                        <div class="device-info">
+                            <div class="device-name">Air Conditioning</div>
+                            <div class="device-status">Running</div>
+                        </div>
+                        <div class="device-toggle"></div>
+                    </div>
+                    <div class="device-consumption">
+                        <span>Current:</span>
+                        <span class="consumption-value">1.2 kW</span>
+                    </div>
+                </div>
+
+                <div class="device-item">
+                    <div class="device-header">
+                        <div class="device-icon">🔥</div>
+                        <div class="device-info">
+                            <div class="device-name">Water Heater</div>
+                            <div class="device-status">Standby</div>
+                        </div>
+                        <div class="device-toggle off"></div>
+                    </div>
+                    <div class="device-consumption">
+                        <span>Current:</span>
+                        <span class="consumption-value">0 kW</span>
+                    </div>
+                </div>
+
+                <div class="device-item">
+                    <div class="device-header">
+                        <div class="device-icon">💡</div>
+                        <div class="device-info">
+                            <div class="device-name">Smart Lighting</div>
+                            <div class="device-status">Running</div>
+                        </div>
+                        <div class="device-toggle"></div>
+                    </div>
+                    <div class="device-consumption">
+                        <span>Current:</span>
+                        <span class="consumption-value">0.3 kW</span>
+                    </div>
+                </div>
+
+                <div class="device-item">
+                    <div class="device-header">
+                        <div class="device-icon">🍳</div>
+                        <div class="device-info">
+                            <div class="device-name">Kitchen Appliances</div>
+                            <div class="device-status">Running</div>
+                        </div>
+                        <div class="device-toggle"></div>
+                    </div>
+                    <div class="device-consumption">
+                        <span>Current:</span>
+                        <span class="consumption-value">0.5 kW</span>
+                    </div>
+                </div>
+
+                <div class="device-item">
+                    <div class="device-header">
+                        <div class="device-icon">🧺</div>
+                        <div class="device-info">
+                            <div class="device-name">Washer/Dryer</div>
+                            <div class="device-status">Off</div>
+                        </div>
+                        <div class="device-toggle off"></div>
+                    </div>
+                    <div class="device-consumption">
+                        <span>Current:</span>
+                        <span class="consumption-value">0 kW</span>
+                    </div>
+                </div>
+
+                <div class="device-item">
+                    <div class="device-header">
+                        <div class="device-icon">📺</div>
+                        <div class="device-info">
+                            <div class="device-name">Entertainment System</div>
+                            <div class="device-status">Off</div>
+                        </div>
+                        <div class="device-toggle off"></div>
+                    </div>
+                    <div class="device-consumption">
+                        <span>Current:</span>
+                        <span class="consumption-value">0 kW</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Smart Controls -->
+        <div class="control-panel">
+            <h3 class="control-title">⚙️ Smart Controls</h3>
+            <div class="control-grid">
+                <div class="control-item">
+                    <label class="control-label">Thermostat Temperature</label>
+                    <input type="range" min="60" max="85" value="72" class="slider" id="tempSlider">
+                    <span class="slider-value" id="tempValue">72°F</span>
+                </div>
+                <div class="control-item">
+                    <label class="control-label">Lighting Brightness</label>
+                    <input type="range" min="0" max="100" value="75" class="slider" id="lightSlider">
+                    <span class="slider-value" id="lightValue">75%</span>
+                </div>
+                <div class="control-item">
+                    <label class="control-label">Solar Battery Reserve</label>
+                    <input type="range" min="0" max="100" value="20" class="slider" id="batterySlider">
+                    <span class="slider-value" id="batteryValue">20%</span>
+                </div>
+                <div class="control-item">
+                    <label class="control-label">Demand Response Mode</label>
+                    <select class="filter-select" style="background: var(--bg-light); border: 2px solid var(--border); color: var(--primary); padding: 10px; border-radius: 8px; cursor: pointer;">
+                        <option>Disabled</option>
+                        <option>Low</option>
+                        <option>Medium</option>
+                        <option>High</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="recommendations">
+            <h3>💡 AI-Powered Energy Recommendations</h3>
+
+            <div class="recommendation-item">
+                <div class="rec-icon">🔋</div>
+                <div class="rec-content">
+                    <h4>Optimize Peak Hour Usage</h4>
+                    <p>Shift heavy appliance usage to 10 AM - 2 PM when solar generation is highest. Potential savings: $8-12/month.</p>
+                </div>
+            </div>
+
+            <div class="recommendation-item">
+                <div class="rec-icon">❄️</div>
+                <div class="rec-content">
+                    <h4>AC Efficiency Alert</h4>
+                    <p>Your AC is running during peak hours. Set temperature 2°F higher to reduce consumption by 6-8% without comfort loss.</p>
+                </div>
+            </div>
+
+            <div class="recommendation-item">
+                <div class="rec-icon">⚡</div>
+                <div class="rec-content">
+                    <h4>Smart Scheduling Enabled</h4>
+                    <p>Water heater and washer will automatically run during off-peak hours (11 PM - 5 AM). Estimated savings: $15/month.</p>
+                </div>
+            </div>
+
+            <div class="recommendation-item">
+                <div class="rec-icon">📊</div>
+                <div class="rec-content">
+                    <h4>Solar Performance Today</h4>
+                    <p>Solar panels generated 22 kWh today. 85% was consumed on-site, 15% exported to grid. Earned $3.20 in credits.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            setupAnimations();
+            setupInteractions();
+            simulateRealTimeData();
+        });
+
+        function setupAnimations() {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.classList.add('scroll-reveal');
+                card.style.animationDelay = `${index * 100}ms`;
+            });
+        }
+
+        function setupInteractions() {
+            // Device toggle functionality
+            const toggles = document.querySelectorAll('.device-toggle');
+            toggles.forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    this.classList.toggle('off');
+                    const item = this.closest('.device-item');
+                    const status = item.querySelector('.device-status');
+                    status.textContent = this.classList.contains('off') ? 'Off' : 'Running';
+                });
+            });
+
+            // Temperature slider
+            const tempSlider = document.getElementById('tempSlider');
+            const tempValue = document.getElementById('tempValue');
+            if (tempSlider) {
+                tempSlider.addEventListener('input', (e) => {
+                    tempValue.textContent = e.target.value + '°F';
+                });
+            }
+
+            // Light slider
+            const lightSlider = document.getElementById('lightSlider');
+            const lightValue = document.getElementById('lightValue');
+            if (lightSlider) {
+                lightSlider.addEventListener('input', (e) => {
+                    lightValue.textContent = e.target.value + '%';
+                });
+            }
+
+            // Battery slider
+            const batterySlider = document.getElementById('batterySlider');
+            const batteryValue = document.getElementById('batteryValue');
+            if (batterySlider) {
+                batterySlider.addEventListener('input', (e) => {
+                    batteryValue.textContent = e.target.value + '%';
+                });
+            }
+        }
+
+        function simulateRealTimeData() {
+            // Update power consumption every 5 seconds
+            setInterval(() => {
+                const ringProgress = document.querySelector('.ring-progress');
+                if (ringProgress) {
+                    const newValue = Math.random() * 40 + 40;
+                    const offset = 565 - (newValue / 100) * 565;
+                    ringProgress.style.strokeDashoffset = offset;
+                    
+                    const ringValue = document.querySelector('.ring-value');
+                    ringValue.textContent = Math.round(newValue) + '%';
+                }
+            }, 5000);
+
+            // Pulse effect on active devices
+            setInterval(() => {
+                const runningDevices = document.querySelectorAll('.device-item:has(.device-status:contains("Running"))');
+                runningDevices.forEach(device => {
+                    device.style.boxShadow = `0 0 ${Math.sin(Date.now() / 500) * 10 + 10}px rgba(0, 217, 255, 0.2)`;
+                });
+            }, 50);
+        }
+    </script>
+</body>
+</html>

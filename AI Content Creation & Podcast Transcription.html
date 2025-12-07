@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Content Creation & Podcast Transcription</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #FF006E;
+            --primary-dark: #D60055;
+            --secondary: #00D9FF;
+            --accent: #8338EC;
+            --success: #00FF6B;
+            --warning: #FFB900;
+            --bg-dark: #0a0e27;
+            --bg-light: #131829;
+            --glass-light: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8c1;
+            --border: rgba(0, 217, 255, 0.2);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 50%, var(--bg-light) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 0, 110, 0.1) 0%, transparent 70%);
+            animation: floatBlob 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -40%;
+            left: -40%;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(circle, rgba(0, 217, 255, 0.08) 0%, transparent 70%);
+            animation: floatBlob 25s ease-in-out infinite reverse;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes floatBlob {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(30px, -30px) rotate(90deg); }
+            50% { transform: translate(-20px, 20px) rotate(180deg); }
+            75% { transform: translate(40px, 10px) rotate(270deg); }
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 50px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header Section */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            letter-spacing: -2px;
+            color: var(--text-primary);
+        }
+
+        .header h1 .accent {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* Main Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 28px;
+            margin-bottom: 40px;
+        }
+
+        .dashboard-grid.wide {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid.wide {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--glass-light);
+            backdrop-filter: blur(30px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 35px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s ease;
+            pointer-events: none;
+        }
+
+        .card:hover::before {
+            left: 100%;
+        }
+
+        .card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 20px 60px rgba(255, 0, 110, 0.2);
+            transform: translateY(-10px);
+            background: rgba(255, 0, 110, 0.08);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            gap: 15px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .card-icon {
+            font-size: 2.2rem;
+            min-width: 50px;
+        }
+
+        .card-header h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .card-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            background: rgba(0, 255, 107, 0.2);
+            color: var(--success);
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(0, 255, 107, 0.4);
+            white-space: nowrap;
+        }
+
+        .card-badge.active {
+            background: rgba(255, 0, 110, 0.2);
+            color: var(--primary);
+            border-color: rgba(255, 0, 110, 0.4);
+        }
+
+        /* Waveform Visualization */
+        .waveform-container {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(255, 0, 110, 0.1), rgba(0, 217, 255, 0.08));
+            border-radius: 14px;
+            margin: 25px 0;
+        }
+
+        .waveform-bar {
+            width: 6px;
+            background: linear-gradient(180deg, var(--primary), var(--accent));
+            border-radius: 3px;
+            animation: wave 0.6s ease-in-out infinite;
+            box-shadow: 0 0 10px rgba(255, 0, 110, 0.5);
+        }
+
+        @keyframes wave {
+            0%, 100% { height: 20%; }
+            50% { height: 100%; }
+        }
+
+        .waveform-bar:nth-child(1) { animation-delay: 0s; }
+        .waveform-bar:nth-child(2) { animation-delay: 0.1s; }
+        .waveform-bar:nth-child(3) { animation-delay: 0.2s; }
+        .waveform-bar:nth-child(4) { animation-delay: 0.3s; }
+        .waveform-bar:nth-child(5) { animation-delay: 0.4s; }
+        .waveform-bar:nth-child(6) { animation-delay: 0.5s; }
+        .waveform-bar:nth-child(7) { animation-delay: 0.6s; }
+        .waveform-bar:nth-child(8) { animation-delay: 0.7s; }
+        .waveform-bar:nth-child(9) { animation-delay: 0.8s; }
+        .waveform-bar:nth-child(10) { animation-delay: 0.9s; }
+
+        /* Progress Ring */
+        .progress-ring {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin: 25px auto;
+        }
+
+        .ring-svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .ring-circle {
+            fill: none;
+            stroke-width: 10;
+            stroke-linecap: round;
+        }
+
+        .ring-bg {
+            stroke: rgba(255, 0, 110, 0.1);
+        }
+
+        .ring-progress {
+            stroke: url(#progressGradient);
+            stroke-dasharray: 565;
+            stroke-dashoffset: 565;
+            animation: fillRing 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fillRing {
+            to {
+                stroke-dashoffset: 141;
+            }
+        }
+
+        .ring-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .ring-value {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(255, 0, 110, 0.5);
+        }
+
+        .ring-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        /* Timeline/Transcript */
+        .transcript-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+
+        .transcript-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 0, 110, 0.05);
+            border-left: 3px solid var(--primary);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            animation: slideIn 0.4s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .transcript-item:nth-child(1) { animation-delay: 0.1s; }
+        .transcript-item:nth-child(2) { animation-delay: 0.2s; }
+        .transcript-item:nth-child(3) { animation-delay: 0.3s; }
+        .transcript-item:nth-child(4) { animation-delay: 0.4s; }
+
+        .transcript-item:hover {
+            background: rgba(255, 0, 110, 0.15);
+            transform: translateX(5px);
+        }
+
+        .transcript-time {
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: 700;
+            min-width: 55px;
+        }
+
+        .transcript-text {
+            flex: 1;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .transcript-speaker {
+            font-weight: 700;
+            color: var(--secondary);
+            margin-bottom: 4px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 16px;
+            border-radius: 10px;
+            border-left: 3px solid var(--secondary);
+            transition: all 0.3s ease;
+        }
+
+        .stat-box:hover {
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--secondary);
+        }
+
+        /* AI Recommendations */
+        .recommendations {
+            background: linear-gradient(135deg, rgba(255, 0, 110, 0.08), rgba(0, 217, 255, 0.08));
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 30px;
+            margin-top: 40px;
+        }
+
+        .recommendations h3 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 25px;
+            letter-spacing: -0.5px;
+        }
+
+        .rec-item {
+            display: flex;
+            gap: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border);
+            align-items: flex-start;
+        }
+
+        .rec-item:last-child {
+            border-bottom: none;
+        }
+
+        .rec-icon {
+            font-size: 1.6rem;
+            min-width: 40px;
+        }
+
+        .rec-content h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .rec-content p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(255, 0, 110, 0.3);
+        }
+
+        .btn.secondary {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn.secondary:hover {
+            background: rgba(255, 0, 110, 0.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.2rem;
+            }
+
+            .dashboard-grid,
+            .dashboard-grid.wide {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scroll Animation */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: reveal 0.6s ease forwards;
+        }
+
+        @keyframes reveal {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎙️ AI Content Creation <span class="accent">& Transcription</span></h1>
+            <p>Transform your podcast into content gold. AI-powered transcription, automatic show notes, social clips, and personalized insights for creators.</p>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid wide">
+            <!-- Upload & Processing -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">📤</span>
+                        <h2>Upload & Process</h2>
+                    </div>
+                    <span class="card-badge active">Active</span>
+                </div>
+
+                <div class="waveform-container">
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                    <div class="waveform-bar"></div>
+                </div>
+
+                <div class="progress-ring">
+                    <svg class="ring-svg" viewBox="0 0 120 120">
+                        <defs>
+                            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#FF006E;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#8338EC;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle class="ring-circle ring-bg" cx="60" cy="60" r="50"></circle>
+                        <circle class="ring-circle ring-progress" cx="60" cy="60" r="50"></circle>
+                    </svg>
+                    <div class="ring-text">
+                        <div class="ring-value">78%</div>
+                        <div class="ring-label">Complete</div>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">Duration</div>
+                        <div class="stat-value">1:24:32</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Speakers</div>
+                        <div class="stat-value">3</div>
+                    </div>
+                </div>
+
+                <button class="btn" style="width: 100%; margin-top: 15px;">⬆️ Upload Episode</button>
+            </div>
+
+            <!-- Transcription Preview -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">📝</span>
+                        <h2>Live Transcription</h2>
+                    </div>
+                    <span class="card-badge">Processing</span>
+                </div>
+
+                <div class="transcript-section">
+                    <div class="transcript-item">
+                        <span class="transcript-time">00:00</span>
+                        <div class="transcript-text">
+                            <div class="transcript-speaker">Alex Chen (Host)</div>
+                            Welcome back to the Creator's Studio podcast. Today we're diving deep into AI content creation strategies that are revolutionizing how creators work.
+                        </div>
+                    </div>
+
+                    <div class="transcript-item">
+                        <span class="transcript-time">00:45</span>
+                        <div class="transcript-text">
+                            <div class="transcript-speaker">Maya Sharma (Guest)</div>
+                            The key is automation without losing authenticity. AI should enhance your unique voice, not replace it. I've seen creators triple their output.
+                        </div>
+                    </div>
+
+                    <div class="transcript-item">
+                        <span class="transcript-time">01:32</span>
+                        <div class="transcript-text">
+                            <div class="transcript-speaker">Alex Chen (Host)</div>
+                            That's fascinating. Can you walk us through a specific workflow? How do you structure your week?
+                        </div>
+                    </div>
+
+                    <div class="transcript-item">
+                        <span class="transcript-time">02:15</span>
+                        <div class="transcript-text">
+                            <div class="transcript-speaker">Maya Sharma (Guest)</div>
+                            Absolutely. Monday is for planning and content ideation. Tuesday through Thursday we batch record. Friday we refine and optimize the output using AI tools.
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn secondary" style="width: 100%; margin-top: 15px;">View Full Transcript</button>
+            </div>
+        </div>
+
+        <!-- Content Generation Grid -->
+        <div class="dashboard-grid">
+            <!-- Show Notes Generator -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">📋</span>
+                        <h2>Show Notes</h2>
+                    </div>
+                    <span class="card-badge">Generated</span>
+                </div>
+
+                <div style="font-size: 0.9rem; line-height: 1.8; color: var(--text-secondary);">
+                    <strong style="color: var(--primary);">Episode Title:</strong> <br>
+                    AI Content Creation: From Vision to Viral
+                    <br><br>
+                    <strong style="color: var(--primary);">Topics Covered:</strong><br>
+                    • AI-powered automation tools<br>
+                    • Content batching workflows<br>
+                    • Maintaining authentic voice<br>
+                    • Performance metrics & analytics<br>
+                    <br>
+                    <strong style="color: var(--primary);">Key Timestamps:</strong><br>
+                    00:45 - Guest introduction & background<br>
+                    02:15 - Weekly workflow breakdown<br>
+                    15:30 - Tools & platforms review<br>
+                    45:00 - Q&A with audience
+                </div>
+
+                <button class="btn" style="width: 100%; margin-top: 20px;">📥 Download Notes</button>
+            </div>
+
+            <!-- Social Clips -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">🎬</span>
+                        <h2>Social Clips</h2>
+                    </div>
+                    <span class="card-badge">8 Generated</span>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0, 217, 255, 0.1); border-radius: 8px; border-left: 3px solid var(--secondary);">
+                        <span style="font-size: 1.5rem;">🐦</span>
+                        <div>
+                            <div style="font-weight: 700; color: var(--secondary); font-size: 0.85rem;">Twitter/X</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">3 clips ready to post</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(255, 0, 110, 0.1); border-radius: 8px; border-left: 3px solid var(--primary);">
+                        <span style="font-size: 1.5rem;">📸</span>
+                        <div>
+                            <div style="font-weight: 700; color: var(--primary); font-size: 0.85rem;">Instagram Reels</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">3 short videos generated</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0, 255, 107, 0.1); border-radius: 8px; border-left: 3px solid var(--success);">
+                        <span style="font-size: 1.5rem;">▶️</span>
+                        <div>
+                            <div style="font-weight: 700; color: var(--success); font-size: 0.85rem;">TikTok Videos</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">2 trending format clips</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn" style="width: 100%; margin-top: 20px;">🚀 Post to Socials</button>
+            </div>
+
+            <!-- Email Newsletter -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">📧</span>
+                        <h2>Newsletter</h2>
+                    </div>
+                    <span class="card-badge active">Ready</span>
+                </div>
+
+                <div style="font-size: 0.9rem; line-height: 1.8; color: var(--text-secondary); background: rgba(0, 0, 0, 0.2); padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <strong style="color: var(--secondary);">Subject Line (AI Generated):</strong> <br>
+                    "3 AI Hacks That Tripled This Creator's Content Output"
+                    <br><br>
+                    <strong style="color: var(--secondary);">Preview Text:</strong><br>
+                    Learn the exact workflow and tools that creators are using to automate their content pipeline without losing authenticity...
+                </div>
+
+                <button class="btn secondary" style="width: 100%; margin-bottom: 10px;">✏️ Edit Copy</button>
+                <button class="btn" style="width: 100%;">📤 Send to List</button>
+            </div>
+
+            <!-- Blog Post Generator -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">✍️</span>
+                        <h2>Blog Article</h2>
+                    </div>
+                    <span class="card-badge">Draft Ready</span>
+                </div>
+
+                <div style="font-size: 0.85rem; line-height: 1.7; color: var(--text-secondary);">
+                    <strong style="color: var(--primary);">Draft Outline Generated:</strong><br><br>
+                    1. Introduction - Why AI is reshaping content creation<br>
+                    2. The Problem - Creator burnout and content demands<br>
+                    3. The Solution - AI-powered workflow<br>
+                    4. Tools & Strategies - Specific recommendations<br>
+                    5. Case Study - Real results from creators<br>
+                    6. Implementation Guide - Step-by-step<br>
+                    7. Conclusion & Next Steps<br><br>
+                    <strong style="color: var(--secondary);">Estimated Word Count: 2,200</strong>
+                </div>
+
+                <button class="btn" style="width: 100%; margin-top: 15px;">🤖 Expand to Full Article</button>
+            </div>
+        </div>
+
+        <!-- Performance Analytics -->
+        <div class="card" style="margin-top: 30px;">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="card-icon">📊</span>
+                    <h2>AI-Generated Insights</h2>
+                </div>
+                <span class="card-badge">Latest Analysis</span>
+            </div>
+
+            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <div class="stat-box">
+                    <div class="stat-label">Avg Engagement Rate</div>
+                    <div class="stat-value">8.4%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Content Repurposing Score</div>
+                    <div class="stat-value">92%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Time Saved (Hours/Month)</div>
+                    <div class="stat-value">18.5</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Content Pieces/Episode</div>
+                    <div class="stat-value">12</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Recommendations -->
+        <div class="recommendations">
+            <h3>💡 AI-Powered Recommendations for Your Next Episode</h3>
+
+            <div class="rec-item">
+                <div class="rec-icon">🎯</div>
+                <div class="rec-content">
+                    <h4>Optimize Release Strategy</h4>
+                    <p>Your audience engagement is highest Tuesday-Thursday, 10 AM - 2 PM. Schedule the next 3 episodes for these windows to maximize reach and interaction.</p>
+                </div>
+            </div>
+
+            <div class="rec-item">
+                <div class="rec-icon">📈</div>
+                <div class="rec-content">
+                    <h4>Content Pillar Performance</h4>
+                    <p>"Workflow & Productivity" topics generate 34% more shares. Consider dedicating 40% of your monthly episodes to this theme based on audience data.</p>
+                </div>
+            </div>
+
+            <div class="rec-item">
+                <div class="rec-icon">👥</div>
+                <div class="rec-content">
+                    <h4>Guest Recommendations</h4>
+                    <p>Your audience responds well to founder interviews and case studies. We've identified 12 potential guests in your niche with 50K+ engaged followers.</p>
+                </div>
+            </div>
+
+            <div class="rec-item">
+                <div class="rec-icon">⚡</div>
+                <div class="rec-content">
+                    <h4>Batch Recording Efficiency</h4>
+                    <p>Record 4 episodes in one session for optimal audio consistency. This approach saves 12+ hours monthly while maintaining quality. Next batch: Thursday 2 PM.</p>
+                </div>
+            </div>
+
+            <div class="rec-item">
+                <div class="rec-icon">💰</div>
+                <div class="rec-content">
+                    <h4>Monetization Opportunity</h4>
+                    <p>Your top 3 episodes have 15K+ listens. Consider creating premium content or sponsorship tier. Projected monthly increase: $400-600.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="text-align: center; margin-top: 50px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn">⚙️ Configure Settings</button>
+            <button class="btn secondary">📚 View Templates</button>
+            <button class="btn secondary">🎓 Learn AI Prompts</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize on load
+        window.addEventListener('load', () => {
+            setupAnimations();
+            setupInteractions();
+            simulateTranscription();
+        });
+
+        function setupAnimations() {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.classList.add('scroll-reveal');
+                card.style.animationDelay = `${index * 100}ms`;
+            });
+        }
+
+        function setupInteractions() {
+            // Button interactions
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 150);
+                });
+            });
+
+            // Transcript item hover
+            const transcriptItems = document.querySelectorAll('.transcript-item');
+            transcriptItems.forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    this.style.borderLeftColor = 'var(--secondary)';
+                });
+                item.addEventListener('mouseleave', function() {
+                    this.style.borderLeftColor = 'var(--primary)';
+                });
+            });
+
+            // Stat box interactions
+            const statBoxes = document.querySelectorAll('.stat-box');
+            statBoxes.forEach(box => {
+                box.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-3px)';
+                });
+                box.addEventListener('mouseleave', function() {
+                    this.style.transform = '';
+                });
+            });
+        }
+
+        function simulateTranscription() {
+            // Simulate text reveal animation
+            const transcriptItems = document.querySelectorAll('.transcript-item');
+            let currentIndex = 0;
+
+            const revealInterval = setInterval(() => {
+                if (currentIndex < transcriptItems.length) {
+                    transcriptItems[currentIndex].style.opacity = '1';
+                    transcriptItems[currentIndex].style.animation = 'slideIn 0.4s ease forwards';
+                    currentIndex++;
+                } else {
+                    clearInterval(revealInterval);
+                }
+            }, 800);
+
+            // Update progress ring every 3 seconds
+            setInterval(() => {
+                const ringProgress = document.querySelector('.ring-progress');
+                const ringValue = document.querySelector('.ring-value');
+                if (ringProgress) {
+                    const newValue = Math.random() * 20 + 70;
+                    const offset = 565 - (newValue / 100) * 565;
+                    ringProgress.style.strokeDashoffset = offset;
+                    ringValue.textContent = Math.round(newValue) + '%';
+                }
+            }, 3000);
+
+            // Auto-update activity recommendations
+            const recommendations = [
+                'Optimize release timing based on audience data',
+                'Consider creating more interview-based content',
+                'Explore sponsorship opportunities for top episodes',
+                'Test different episode lengths for engagement',
+                'Build a guest list of top performers in your niche'
+            ];
+
+            let recIndex = 0;
+            setInterval(() => {
+                const recItems = document.querySelectorAll('.rec-item');
+                if (recItems.length > 0) {
+                    const randomRec = recItems[Math.floor(Math.random() * recItems.length)];
+                    randomRec.style.borderLeftColor = 'var(--secondary)';
+                    setTimeout(() => {
+                        randomRec.style.borderLeftColor = '';
+                    }, 1000);
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
